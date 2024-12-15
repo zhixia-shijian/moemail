@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1733032810249,
+      "tag": "0000_hard_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1733057860581,
+      "tag": "0001_tiresome_squadron_supreme",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1734184527968,
+      "tag": "0002_military_cobalt_man",
+      "breakpoints": true
+    }
+  ]
+}

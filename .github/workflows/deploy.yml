@@ -1,0 +1,111 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full git history for checking file changes
+
+      - name: Get previous tag
+        id: previoustag
+        run: |
+          echo "tag=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_OUTPUT
+        continue-on-error: true  # Allow failure if this is the first tag
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Process configuration files
+      - name: Process configuration files
+        run: |
+          # Process wrangler.example.toml
+          if [ -f wrangler.example.toml ]; then
+            cp wrangler.example.toml wrangler.toml
+            sed -i "s/database_name = \".*\"/database_name = \"${{ secrets.DATABASE_NAME }}\"/" wrangler.toml
+            sed -i "s/database_id = \".*\"/database_id = \"${{ secrets.DATABASE_ID }}\"/" wrangler.toml
+          fi
+          
+          # Process wrangler.email.example.toml
+          if [ -f wrangler.email.example.toml ]; then
+            cp wrangler.email.example.toml wrangler.email.toml
+            sed -i "s/database_name = \".*\"/database_name = \"${{ secrets.DATABASE_NAME }}\"/" wrangler.email.toml
+            sed -i "s/database_id = \".*\"/database_id = \"${{ secrets.DATABASE_ID }}\"/" wrangler.email.toml
+          fi
+          
+          # Process wrangler.cleanup.example.toml
+          if [ -f wrangler.cleanup.example.toml ]; then
+            cp wrangler.cleanup.example.toml wrangler.cleanup.toml
+            sed -i "s/database_name = \".*\"/database_name = \"${{ secrets.DATABASE_NAME }}\"/" wrangler.cleanup.toml
+            sed -i "s/database_id = \".*\"/database_id = \"${{ secrets.DATABASE_ID }}\"/" wrangler.cleanup.toml
+          fi
+
+      # Check if workers have changes
+      - name: Check workers changes
+        id: check_changes
+        run: |
+          # If this is the first tag, check all files
+          if [ -z "${{ steps.previoustag.outputs.tag }}" ]; then
+            if git ls-files | grep -q "workers/email-receiver.ts"; then
+              echo "email_worker_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "email_worker_changed=false" >> $GITHUB_OUTPUT
+            fi
+            if git ls-files | grep -q "workers/cleanup.ts"; then
+              echo "cleanup_worker_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "cleanup_worker_changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Compare changes between two tags
+            if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q "workers/email-receiver.ts"; then
+              echo "email_worker_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "email_worker_changed=false" >> $GITHUB_OUTPUT
+            fi
+            if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q "workers/cleanup.ts"; then
+              echo "cleanup_worker_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "cleanup_worker_changed=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      # Deploy Pages application
+      - name: Deploy Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm run deploy:pages
+
+      # Deploy email worker if changed
+      - name: Deploy Email Worker
+        if: steps.check_changes.outputs.email_worker_changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm run deploy:email
+
+      # Deploy cleanup worker if changed
+      - name: Deploy Cleanup Worker
+        if: steps.check_changes.outputs.cleanup_worker_changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm run deploy:cleanup
