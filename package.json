@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "build:pages": "npx @cloudflare/next-on-pages",
-    "db:migrate-local": "drizzle-kit generate && wrangler d1 migrations apply temp_mail_db --local",
-    "db:migrate-remote": "drizzle-kit generate && wrangler d1 migrations apply temp_mail_db --remote",
+    "db:migrate-local": "tsx scripts/migrate.ts local",
+    "db:migrate-remote": "tsx scripts/migrate.ts remote",
     "generate-test-data": "wrangler dev scripts/generate-test-data.ts",
     "dev:cleanup": "wrangler dev --config wrangler.cleanup.toml --test-scheduled",
     "test:cleanup": "curl http://localhost:8787/__scheduled",
@@ -55,6 +55,8 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vercel": "39.1.1",
-    "wrangler": "^3.91.0"
+    "wrangler": "^3.91.0",
+    "@iarna/toml": "^3.0.0",
+    "tsx": "^4.7.1"
   }
 }

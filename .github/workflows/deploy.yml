@@ -33,6 +33,22 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      # Check if database migrations have changes
+      - name: Check migrations changes
+        id: check_migrations
+        run: |
+          # If this is the first tag, we need to run migrations
+          if [ -z "${{ steps.previoustag.outputs.tag }}" ]; then
+            echo "migrations_changed=true" >> $GITHUB_OUTPUT
+          else
+            # Check if any files in drizzle directory have changed
+            if git diff ${{ steps.previoustag.outputs.tag }}..HEAD --name-only | grep -q "^drizzle/"; then
+              echo "migrations_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "migrations_changed=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
       # Process configuration files
       - name: Process configuration files
         run: |
@@ -56,6 +72,14 @@ jobs:
             sed -i "s/database_name = \".*\"/database_name = \"${{ secrets.DATABASE_NAME }}\"/" wrangler.cleanup.toml
             sed -i "s/database_id = \".*\"/database_id = \"${{ secrets.DATABASE_ID }}\"/" wrangler.cleanup.toml
           fi
+
+      # Run database migrations if needed
+      - name: Run database migrations
+        if: steps.check_migrations.outputs.migrations_changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm db:migrate-remote
 
       # Check if workers have changes
       - name: Check workers changes

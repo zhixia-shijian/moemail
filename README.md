@@ -79,7 +79,7 @@ cp wrangler.example.toml wrangler.toml
 cp wrangler.email.example.toml wrangler.email.toml
 cp wrangler.cleanup.example.toml wrangler.cleanup.toml
 ```
-并设置 Cloudflare D1 数据库名以及数据库 ID
+设置 Cloudflare D1 数据库名以及数据库 ID
 
 4. 设置环境变量：
 ```bash
