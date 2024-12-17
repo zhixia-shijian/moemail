@@ -27,6 +27,8 @@
 
 ![邮箱](https://pic.otaku.ren/20241209/AQADw8UxG9k1uVZ-.jpg "邮箱")
 
+![个人中心](https://pic.otaku.ren/20241217/AQAD9sQxG0g1EVd-.jpg "个人中心")
+
 ## 特性
 
 - 🔒 **隐私保护**：保护您的真实邮箱地址，远离垃圾邮件和不必要的订阅
@@ -38,6 +40,7 @@
 - 📱 **PWA 支持**：支持 PWA 安装
 - 💸 **免费自部署**：基于 Cloudflare 构建, 可实现免费自部署，无需任何费用
 - 🎉 **可爱的 UI**：简洁可爱萌萌哒 UI 界面
+- 🔔 **Webhook 通知**：支持通过 webhook 接收新邮件通知
 
 ## 技术栈
 
@@ -193,6 +196,57 @@ git push origin v1.0.0
 - 在 Overview 中选择刚刚部署的 Cloudflare Pages
 - 在 Settings 中选择变量和机密
 - 添加 AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, AUTH_SECRET
+
+## Webhook 集成
+
+当收到新邮件时，系统会向用户配置并且已启用的 Webhook URL 发送 POST 请求。
+
+### 请求头
+```http
+Content-Type: application/json
+X-Webhook-Event: new_message
+```
+
+### 请求体
+```json
+{
+  "emailId": "email-uuid",
+  "messageId": "message-uuid",
+  "fromAddress": "sender@example.com",
+  "subject": "邮件主题",
+  "content": "邮件文本内容",
+  "html": "邮件HTML内容",
+  "receivedAt": "2024-01-01T12:00:00.000Z",
+  "toAddress": "your-email@moemail.app"
+}
+```
+
+### 配置说明
+1. 点击个人头像，进入个人中心
+2. 在个人中心启用 Webhook
+3. 设置接收通知的 URL
+4. 点击测试按钮验证配置
+5. 保存配置后即可接收新邮件通知
+
+### 测试
+
+项目提供了一个简单的测试服务器, 可以通过如下命令运行:
+
+```bash
+pnpm webhook-test-server
+```
+
+测试服务器会在本地启动一个 HTTP 服务器，监听 3001 端口（http://localhost:3001），并打印收到的 Webhook 消息详情。
+
+如果需要进行外网测试，可以通过 Cloudflare Tunnel 将服务暴露到外网：
+```bash
+pnpx cloudflared tunnel --url http://localhost:3001
+```
+
+### 注意事项
+- Webhook 接口应在 10 秒内响应
+- 非 2xx 响应码会触发重试
+
 
 ## 贡献
 

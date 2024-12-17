@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
-import { Loader2, Send } from "lucide-react"
+import { Loader2, Send, ChevronDown, ChevronUp } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -20,6 +20,8 @@ export function WebhookConfig() {
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [showDocs, setShowDocs] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -30,7 +32,16 @@ export function WebhookConfig() {
         setUrl(data.url)
       })
       .catch(console.error)
+      .finally(() => setInitialLoading(false))
   }, [])
+
+  if (initialLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -105,49 +116,86 @@ export function WebhookConfig() {
       </div>
 
       {enabled && (
-        <div className="space-y-2">
-          <Label htmlFor="webhook-url">Webhook URL</Label>
-          <div className="flex gap-2">
-            <Input
-              id="webhook-url"
-              placeholder="https://example.com/webhook"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              type="url"
-              required
-            />
-            <Button type="submit" disabled={loading} className="w-20">
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "保存"
-              )}
-            </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={handleTest}
-                    disabled={testing || !url}
-                  >
-                    {testing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>发送测试消息到此 Webhook</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="webhook-url">Webhook URL</Label>
+            <div className="flex gap-2">
+              <Input
+                id="webhook-url"
+                placeholder="https://example.com/webhook"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                type="url"
+                required
+              />
+              <Button type="submit" disabled={loading} className="w-20">
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "保存"
+                )}
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleTest}
+                      disabled={testing || !url}
+                    >
+                      {testing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>发送测试消息到此 Webhook</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              我们会向此 URL 发送 POST 请求,包含新邮件的相关信息
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            我们会向此 URL 发送 POST 请求,包含新邮件的相关信息
-          </p>
+
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowDocs(!showDocs)}
+            >
+              {showDocs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              查看数据格式说明
+            </button>
+
+            {showDocs && (
+              <div className="rounded-md bg-muted p-4 text-sm space-y-3">
+                <p>当收到新邮件时，我们会向配置的 URL 发送 POST 请求，请求头包含:</p>
+                <pre className="bg-background p-2 rounded text-xs">
+                  Content-Type: application/json{'\n'}
+                  X-Webhook-Event: new_message
+                </pre>
+                
+                <p>请求体示例:</p>
+                <pre className="bg-background p-2 rounded text-xs overflow-auto">
+{`{
+  "emailId": "email-uuid",
+  "messageId": "message-uuid",
+  "fromAddress": "sender@example.com",
+  "subject": "邮件主题",
+  "content": "邮件文本内容",
+  "html": "邮件HTML内容",
+  "receivedAt": "2024-01-01T12:00:00.000Z",
+  "toAddress": "your-email@${window.location.host}"
+}`}
+                </pre>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </form>
