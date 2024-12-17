@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { Github } from "lucide-react"
+import Link from "next/link"
 
 export function SignButton() {
   const { data: session, status } = useSession()
@@ -24,7 +25,10 @@ export function SignButton() {
 
   return (
     <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
+      <Link 
+        href="/profile"
+        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
         {session.user.image && (
           <Image
             src={session.user.image}
@@ -35,7 +39,7 @@ export function SignButton() {
           />
         )}
         <span className="text-sm">{session.user.name}</span>
-      </div>
+      </Link>
       <Button onClick={() => signOut({ callbackUrl: "/" })} variant="outline">
         登出
       </Button>

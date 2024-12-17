@@ -1,12 +1,13 @@
 import { Env } from '../types'
 import { drizzle } from 'drizzle-orm/d1'
-import { messages, emails } from '../app/lib/schema'
+import { messages, emails, webhooks } from '../app/lib/schema'
 import { eq } from 'drizzle-orm'
 import PostalMime from 'postal-mime'
-
+import { WEBHOOK_CONFIG } from '../app/config'
+import { EmailMessage } from '../app/lib/webhook'
 
 const handleEmail = async (message: ForwardableEmailMessage, env: Env) => {
-  const db = drizzle(env.DB, { schema: { messages, emails } })
+  const db = drizzle(env.DB, { schema: { messages, emails, webhooks } })
 
   const parsedMessage = await PostalMime.parse(message.raw)
 
@@ -22,14 +23,42 @@ const handleEmail = async (message: ForwardableEmailMessage, env: Env) => {
       return
     }
 
-    await db.insert(messages).values({
-      // @ts-expect-error to fix
+    const savedMessage = await db.insert(messages).values({
+      // @ts-expect-error "ignore"
       emailId: targetEmail.id,
       fromAddress: message.from,
       subject: parsedMessage.subject,
       content: parsedMessage.text,
       html: parsedMessage.html || null,
+    }).returning().get()
+
+    const webhook = await db.query.webhooks.findFirst({
+      where: eq(webhooks.userId, targetEmail!.userId!)
     })
+
+    if (webhook?.enabled) {
+      try {
+        await fetch(webhook.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Event': WEBHOOK_CONFIG.EVENTS.NEW_MESSAGE
+          },
+          body: JSON.stringify({
+            emailId: targetEmail.id,
+            messageId: savedMessage.id,
+            fromAddress: savedMessage.fromAddress,
+            subject: savedMessage.subject,
+            content: savedMessage.content,
+            html: savedMessage.html,
+            receivedAt: savedMessage.receivedAt.toISOString(),
+            toAddress: targetEmail.address
+          } as EmailMessage)
+        })
+      } catch (error) {
+        console.error('Failed to send webhook:', error)
+      }
+    }
 
     console.log(`Email processed: ${parsedMessage.subject}`)
   } catch (error) {

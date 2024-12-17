@@ -8,8 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "build:pages": "npx @cloudflare/next-on-pages",
-    "db:migrate-local": "tsx scripts/migrate.ts local",
-    "db:migrate-remote": "tsx scripts/migrate.ts remote",
+    "db:migrate-local": "bun run scripts/migrate.ts local",
+    "db:migrate-remote": "bun run scripts/migrate.ts remote",
+    "webhook-test-server": "bun run scripts/webhook-test-server.ts",
     "generate-test-data": "wrangler dev scripts/generate-test-data.ts",
     "dev:cleanup": "wrangler dev --config wrangler.cleanup.toml --test-scheduled",
     "test:cleanup": "curl http://localhost:8787/__scheduled",
@@ -22,10 +23,12 @@
     "@auth/drizzle-adapter": "^1.7.4",
     "@cloudflare/next-on-pages": "^1.13.6",
     "@radix-ui/react-dialog": "^1.1.2",
-    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-radio-group": "^1.2.1",
     "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-switch": "^1.1.2",
     "@radix-ui/react-toast": "^1.1.5",
+    "@radix-ui/react-tooltip": "^1.1.6",
     "@tailwindcss/typography": "^0.5.15",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
@@ -40,14 +43,18 @@
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
     "tailwind-merge": "^2.2.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241127.0",
+    "@iarna/toml": "^3.0.0",
+    "@types/bun": "^1.1.14",
     "@types/next-pwa": "^5.6.9",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "bun": "^1.1.39",
     "drizzle-kit": "^0.28.1",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
@@ -55,8 +62,6 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vercel": "39.1.1",
-    "wrangler": "^3.91.0",
-    "@iarna/toml": "^3.0.0",
-    "tsx": "^4.7.1"
+    "wrangler": "^3.91.0"
   }
 }
