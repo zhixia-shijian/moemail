@@ -40,7 +40,7 @@ export function SignButton() {
         )}
         <span className="text-sm">{session.user.name}</span>
       </Link>
-      <Button onClick={() => signOut({ callbackUrl: "/" })} variant="outline">
+      <Button onClick={() => signOut({ callbackUrl: "/" })} variant="outline" className="flex-shrink-0">
         登出
       </Button>
     </div>

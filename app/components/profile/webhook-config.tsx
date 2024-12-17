@@ -128,7 +128,7 @@ export function WebhookConfig() {
                 type="url"
                 required
               />
-              <Button type="submit" disabled={loading} className="w-20">
+              <Button type="submit" disabled={loading} className="flex-shrink-0">
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
